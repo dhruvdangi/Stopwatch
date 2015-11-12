@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Stopwatch</string>
+    <string name="action_settings">Settings</string>
+</resources>

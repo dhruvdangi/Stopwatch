@@ -2,10 +2,15 @@ package com.dhruvdangi.stopwatch;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.RippleDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
@@ -33,8 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private Context mContext;
     private LinearLayout mLayout;
     private TextView mClock;
-    private Button mReset;
-    private FloatingActionButton mFab;
+    private FloatingActionButton mFab, mReset;
     private Typeface mTypeface;
 
     @Override
@@ -47,11 +51,11 @@ public class MainActivity extends AppCompatActivity {
 
         mContext = MainActivity.this;
         mLayout = (LinearLayout) findViewById(R.id.layout);
-        mClock = (TextView) findViewById(R.id.clock);
-        mReset = (Button) findViewById(R.id.reset);
-        mFab = (FloatingActionButton) findViewById(R.id.fab);
-        mTypeface = Typeface.createFromAsset(getAssets(), "fonts/Regular.ttf");
 
+        mClock = (TextView) findViewById(R.id.clock);
+        mReset = (FloatingActionButton) findViewById(R.id.reset);
+        mFab = (FloatingActionButton) findViewById(R.id.play);
+        mTypeface = Typeface.createFromAsset(getAssets(), "fonts/Regular.ttf");
         mReset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -68,7 +72,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         mClock.setTypeface(mTypeface);
-        mReset.setTypeface(mTypeface);
     }
 
     @Override
@@ -98,12 +101,12 @@ public class MainActivity extends AppCompatActivity {
         mReset.setVisibility(View.VISIBLE);
         final Runnable runnable = new Runnable() {
             public void run() {
-                mElapsedTime += 10;
+                mElapsedTime += 1000;
                 setTime();
-                handler.postDelayed(this, 10);
+                handler.postDelayed(this, 1000);
             }
         };
-        handler.postDelayed(runnable, 10);
+        handler.postDelayed(runnable, 1000);
         mFab.setImageDrawable(ContextCompat.getDrawable(mContext, R.drawable.pause));
     }
     private void stop() {
@@ -113,17 +116,36 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void reset() {
-        mReset.setVisibility(View.GONE);
         stop();
-        mElapsedTime = 0;
-        setTime();
+        startRipple();
     }
 
+    private void startRipple() {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            final CoordinatorLayout coordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinator_layout);
+            Drawable d = coordinatorLayout.getBackground();
+            final RippleDrawable rippleDrawable = (RippleDrawable) d;
+            rippleDrawable.setHotspot(mReset.getX() + mReset.getWidth() / 2, mReset.getY() + mReset.getHeight() / 2);
+            rippleDrawable.setState(new int[] { android.R.attr.state_pressed, android.R.attr.state_enabled});
+            Runnable stopRipple = new Runnable() {
+                @Override
+                public void run() {
+                    coordinatorLayout.getBackground().setState(new int[]{});
+                    mReset.setVisibility(View.GONE);
+                    mElapsedTime = 0;
+                    setTime();
+                }
+            };
+            Handler h = new Handler();
+            h.postDelayed(stopRipple, 900);
+        } else mReset.setVisibility(View.GONE);
+    }
     private void setTime() {
         String one, two;
         if (mElapsedTime < ONE_MINUTE_IN_MS) {
-            one = String.valueOf(mElapsedTime / 1000);
-            two = String.valueOf((mElapsedTime % 1000) / 10);
+            one = String.valueOf((mElapsedTime % 1000) / 1000);
+            two = String.valueOf(mElapsedTime / 1000);
         } else {
             one = String.valueOf(mElapsedTime / ONE_MINUTE_IN_MS);
             two = String.valueOf((mElapsedTime % ONE_MINUTE_IN_MS) / 1000);

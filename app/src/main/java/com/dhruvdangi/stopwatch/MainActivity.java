@@ -1,97 +1,137 @@
 package com.dhruvdangi.stopwatch;
 
+import android.annotation.SuppressLint;
+import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import java.text.SimpleDateFormat;
+
 public class MainActivity extends AppCompatActivity {
 
-    RelativeLayout mLayout;
-    TextView mClock;
-    int mTimestamp;
-    Boolean running = false;
-    final Handler handler = new Handler();
-    Button mReset, mCredits;
-    FloatingActionButton fab;
+    private static final int ONE_MINUTE_IN_MS = 60 * 1000;
+
+    private int mElapsedTime = 0;
+    private boolean running = false;
+    private final Handler handler = new Handler();
+
+    private Context mContext;
+    private LinearLayout mLayout;
+    private TextView mClock;
+    private Button mReset;
+    private FloatingActionButton mFab;
+    private Typeface mTypeface;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mLayout = (RelativeLayout) findViewById(R.id.layout);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        mContext = MainActivity.this;
+        mLayout = (LinearLayout) findViewById(R.id.layout);
         mClock = (TextView) findViewById(R.id.clock);
-        mClock.setText("0:0");
         mReset = (Button) findViewById(R.id.reset);
+        mFab = (FloatingActionButton) findViewById(R.id.fab);
+        mTypeface = Typeface.createFromAsset(getAssets(), "fonts/Regular.ttf");
+
         mReset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 reset();
             }
         });
-        mCredits = (Button) findViewById(R.id.credits);
-        mCredits.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Snackbar.make(mLayout, "Dhruv, Bharat, Ankit, Kirti", Snackbar.LENGTH_LONG).setAction("Action", null).show();
-            }
-        });
-        fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setImageDrawable(getResources().getDrawable(R.drawable.play));
-        fab.setRippleColor(Color.parseColor("#ffffff"));
-        fab.setOnClickListener(new View.OnClickListener() {
+        mClock.setText(String.format(getString(R.string.time_format), "00", "00"));
+        mFab.setImageDrawable(ContextCompat.getDrawable(mContext, R.drawable.play));
+        mFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (running) stop(); else start();
+                if (running) stop();
+                else start();
             }
         });
+        mClock.setTypeface(mTypeface);
+        mReset.setTypeface(mTypeface);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                return true;
+            case R.id.action_credits:
+                Snackbar.make(mLayout, "Made by Dhruv, Bharat, Ankit, Kirti", Snackbar.LENGTH_LONG)
+                        .setAction("DISMISS", null).
+                        show();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+
     }
 
     private void start() {
         running = true;
-        Log.d("Clock", "Started");
-        final Runnable r = new Runnable() {
+        mReset.setVisibility(View.VISIBLE);
+        final Runnable runnable = new Runnable() {
             public void run() {
-                mTimestamp += 1;
+                mElapsedTime += 10;
                 setTime();
-                handler.postDelayed(this, 1000);
+                handler.postDelayed(this, 10);
             }
         };
-        handler.postDelayed(r, 1000);
-        fab.setImageDrawable(getResources().getDrawable(R.drawable.pause));
+        handler.postDelayed(runnable, 10);
+        mFab.setImageDrawable(ContextCompat.getDrawable(mContext, R.drawable.pause));
     }
     private void stop() {
-        Log.d("Clock", "Stopped");
         running = false;
         handler.removeCallbacksAndMessages(null);
-        fab.setImageDrawable(getResources().getDrawable(R.drawable.play));
-
+        mFab.setImageDrawable(ContextCompat.getDrawable(mContext, R.drawable.play));
     }
 
     private void reset() {
+        mReset.setVisibility(View.GONE);
         stop();
-        mTimestamp = 0;
+        mElapsedTime = 0;
         setTime();
     }
 
     private void setTime() {
-        int min = 0, sec = 0;
-        while (mTimestamp > 60) {
-            min++;
-            mTimestamp -= 60;
+        String one, two;
+        if (mElapsedTime < ONE_MINUTE_IN_MS) {
+            one = String.valueOf(mElapsedTime / 1000);
+            two = String.valueOf((mElapsedTime % 1000) / 10);
+        } else {
+            one = String.valueOf(mElapsedTime / ONE_MINUTE_IN_MS);
+            two = String.valueOf((mElapsedTime % ONE_MINUTE_IN_MS) / 1000);
         }
-        sec = mTimestamp;
-        mClock.setText(min + ":" + sec);
+
+        one = (one.length() == 1 ? "0" : "") + one;
+        two = (two.length() == 1 ? "0" : "") + two;
+
+        mClock.setText(String.format(getString(R.string.time_format), one, two));
     }
 }

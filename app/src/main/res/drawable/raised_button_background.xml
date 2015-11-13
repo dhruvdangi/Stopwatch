@@ -2,6 +2,6 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <ripple xmlns:android="http://schemas.android.com/apk/res/android"
         android:color="?attr/colorControlHighlight">
-        <item android:drawable="@color/blue"/>
+        <item android:drawable="@color/accent"/>
     </ripple>
 </selector>
